@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Bike, 
   MapPin, 
@@ -23,7 +23,8 @@ import {
   ShieldCheck, 
   Package, 
   MessageSquareQuote,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -59,6 +60,23 @@ export default function PicktoApp() {
   const [phoneValue, setPhoneValue] = useState("");
   const [timer, setTimer] = useState(10);
   const [aiClarification, setAiClarification] = useState<any>(null);
+  
+  // Onboarding data state
+  const [onboardingData, setOnboardingData] = useState({
+    fullName: "",
+    city: "",
+    vehicleType: "2 Wheeler",
+    licenseNo: "",
+    rcNo: "",
+    insuranceNo: "",
+    aadhaarNo: "",
+    licenseFile: null as string | null,
+    rcFile: null as string | null,
+    insuranceFile: null as string | null,
+    aadhaarFile: null as string | null,
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Simulate Order Assignment logic
@@ -66,7 +84,6 @@ export default function PicktoApp() {
     let interval: any;
     if (isOnline && !activeOrder && !incomingOrder) {
       interval = setInterval(() => {
-        // 10% chance to get an order every 10 seconds for demo
         if (Math.random() > 0.8) {
           triggerIncomingOrder();
         }
@@ -119,6 +136,25 @@ export default function PicktoApp() {
       setAiClarification(result);
     } catch (e) {
       toast({ variant: "destructive", title: "AI Error", description: "Could not clarify instructions." });
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file.name;
+    const stepKeys: Record<number, string> = {
+      2: 'licenseFile',
+      3: 'rcFile',
+      4: 'insuranceFile',
+      5: 'aadhaarFile'
+    };
+
+    const key = stepKeys[onboardingStep];
+    if (key) {
+      setOnboardingData(prev => ({ ...prev, [key]: fileName }));
+      toast({ title: "File Uploaded", description: `${fileName} has been selected.` });
     }
   };
 
@@ -176,11 +212,13 @@ export default function PicktoApp() {
   const renderOnboarding = () => {
     const steps = [
       { id: 1, title: "Basic Details", icon: <User className="w-5 h-5" /> },
-      { id: 2, title: "Driving License", icon: <Smartphone className="w-5 h-5" /> },
-      { id: 3, title: "RC & Vehicle", icon: <Bike className="w-5 h-5" /> },
-      { id: 4, title: "Insurance", icon: <ShieldCheck className="w-5 h-5" /> },
-      { id: 5, title: "Aadhaar Card", icon: <FileText className="w-5 h-5" /> }
+      { id: 2, title: "Driving License", icon: <Smartphone className="w-5 h-5" />, field: 'licenseNo', fileField: 'licenseFile' },
+      { id: 3, title: "RC & Vehicle", icon: <Bike className="w-5 h-5" />, field: 'rcNo', fileField: 'rcFile' },
+      { id: 4, title: "Insurance", icon: <ShieldCheck className="w-5 h-5" />, field: 'insuranceNo', fileField: 'insuranceFile' },
+      { id: 5, title: "Aadhaar Card", icon: <FileText className="w-5 h-5" />, field: 'aadhaarNo', fileField: 'aadhaarFile' }
     ];
+
+    const currentStepConfig = steps[onboardingStep - 1];
 
     return (
       <div className="screen-content bg-white h-full flex flex-col">
@@ -196,20 +234,34 @@ export default function PicktoApp() {
             <div className="space-y-4 animate-in fade-in">
               <div className="space-y-2">
                 <Label>Full Name</Label>
-                <Input placeholder="Enter your full name" />
+                <Input 
+                  placeholder="Enter your full name" 
+                  value={onboardingData.fullName}
+                  onChange={(e) => setOnboardingData(prev => ({ ...prev, fullName: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>City</Label>
-                <Input placeholder="Select City" />
+                <Input 
+                  placeholder="Select City" 
+                  value={onboardingData.city}
+                  onChange={(e) => setOnboardingData(prev => ({ ...prev, city: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Vehicle Type</Label>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer border-primary bg-primary/5">
+                  <div 
+                    className={`border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer transition-all ${onboardingData.vehicleType === '2 Wheeler' ? 'border-primary bg-primary/5' : 'opacity-50'}`}
+                    onClick={() => setOnboardingData(prev => ({ ...prev, vehicleType: '2 Wheeler' }))}
+                  >
                     <Bike className="w-8 h-8 text-primary" />
                     <span className="text-sm font-semibold">2 Wheeler</span>
                   </div>
-                  <div className="border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer opacity-50">
+                  <div 
+                    className={`border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer transition-all ${onboardingData.vehicleType === 'Bicycle' ? 'border-primary bg-primary/5' : 'opacity-50'}`}
+                    onClick={() => setOnboardingData(prev => ({ ...prev, vehicleType: 'Bicycle' }))}
+                  >
                     <Bike className="w-8 h-8 text-muted-foreground" />
                     <span className="text-sm font-semibold">Bicycle</span>
                   </div>
@@ -222,17 +274,45 @@ export default function PicktoApp() {
             <div className="space-y-6 animate-in fade-in">
               <div className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center bg-muted/30">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                  {steps[onboardingStep-1].icon}
+                  {currentStepConfig.icon}
                 </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Click to upload or take a photo of your <br/>
-                  <strong>{steps[onboardingStep-1].title}</strong>
-                </p>
-                <Button variant="outline" size="sm" className="mt-4">Choose File</Button>
+                {onboardingData[currentStepConfig.fileField as keyof typeof onboardingData] ? (
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-success flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {onboardingData[currentStepConfig.fileField as keyof typeof onboardingData]}
+                    </p>
+                    <Button variant="ghost" size="sm" className="mt-2 text-primary" onClick={() => fileInputRef.current?.click()}>
+                      Change File
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Click to upload or take a photo of your <br/>
+                    <strong>{currentStepConfig.title}</strong>
+                  </p>
+                )}
+                {!onboardingData[currentStepConfig.fileField as keyof typeof onboardingData] && (
+                  <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="w-4 h-4" />
+                    Choose File
+                  </Button>
+                )}
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload}
+                  accept="image/*,application/pdf"
+                />
               </div>
               <div className="space-y-2">
-                <Label>{steps[onboardingStep-1].title} Number</Label>
-                <Input placeholder={`Enter ${steps[onboardingStep-1].title} Number`} />
+                <Label>{currentStepConfig.title} Number</Label>
+                <Input 
+                  placeholder={`Enter ${currentStepConfig.title} Number`} 
+                  value={onboardingData[currentStepConfig.field as keyof typeof onboardingData] as string}
+                  onChange={(e) => setOnboardingData(prev => ({ ...prev, [currentStepConfig.field as string]: e.target.value }))}
+                />
               </div>
             </div>
           )}
@@ -273,7 +353,6 @@ export default function PicktoApp() {
         variant="outline" 
         className="w-full max-w-xs" 
         onClick={() => {
-          // Mocking approval for demo
           setAppState("DASHBOARD");
         }}
       >
@@ -300,7 +379,6 @@ export default function PicktoApp() {
       </header>
 
       <div className="space-y-4">
-        {/* Online/Offline Toggle */}
         <Card className={`transition-all duration-300 ${isOnline ? 'border-success bg-success/5 shadow-lg shadow-success/10' : 'bg-white'}`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -320,7 +398,6 @@ export default function PicktoApp() {
           </CardContent>
         </Card>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <Card className="bg-white">
             <CardContent className="p-4 flex flex-col items-center text-center">
@@ -338,7 +415,6 @@ export default function PicktoApp() {
           </Card>
         </div>
 
-        {/* Incentive Progress */}
         <Card className="bg-white">
           <CardHeader className="p-4 pb-0 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -357,7 +433,6 @@ export default function PicktoApp() {
           </CardContent>
         </Card>
 
-        {/* Recent Activity / News */}
         <div className="space-y-3">
           <h3 className="font-bold text-sm text-muted-foreground px-1 uppercase tracking-wider">High Demand Zones</h3>
           <div className="space-y-2">
@@ -393,7 +468,6 @@ export default function PicktoApp() {
 
     return (
       <div className="screen-content h-full bg-[#ECF1F6] flex flex-col p-0 overflow-hidden">
-        {/* Map Placeholder */}
         <div className="flex-1 relative bg-muted/20">
           <img 
             src="https://picsum.photos/seed/map/600/800" 
@@ -402,7 +476,6 @@ export default function PicktoApp() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
           
-          {/* Floating Navigation Card */}
           <div className="absolute top-4 left-4 right-4 animate-in slide-in-from-top-4">
             <Card className="bg-primary text-white shadow-xl">
               <CardContent className="p-4 flex items-center gap-4">
@@ -419,7 +492,6 @@ export default function PicktoApp() {
           </div>
         </div>
 
-        {/* Action Panel */}
         <div className="bg-white rounded-t-3xl p-6 space-y-6 shadow-2xl relative z-10 animate-in slide-in-from-bottom-8">
           <div className="w-12 h-1 bg-muted rounded-full mx-auto" />
           
@@ -671,7 +743,6 @@ export default function PicktoApp() {
 
   return (
     <div className="mobile-container">
-      {/* Dynamic Screens */}
       {appState === "LOGIN" && renderLogin()}
       {appState === "ONBOARDING" && renderOnboarding()}
       {appState === "PENDING_APPROVAL" && renderPendingApproval()}
@@ -681,7 +752,6 @@ export default function PicktoApp() {
       {appState === "PROFILE" && renderProfile()}
       {appState === "SUPPORT" && renderSupport()}
 
-      {/* Incoming Order Overlay */}
       {incomingOrder && (
         <div className="absolute inset-0 z-[100] bg-black/60 flex flex-col justify-end">
           <div className="bg-white w-full rounded-t-3xl p-8 space-y-6 animate-in slide-in-from-bottom-full duration-500">
@@ -759,7 +829,6 @@ export default function PicktoApp() {
         </div>
       )}
 
-      {/* Bottom Navigation (Only visible on dashboard and secondary screens) */}
       {!["LOGIN", "ONBOARDING", "PENDING_APPROVAL", "ACTIVE_ORDER"].includes(appState) && (
         <nav className="bottom-nav">
           {[
