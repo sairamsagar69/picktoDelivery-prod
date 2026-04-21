@@ -48,7 +48,7 @@ type AppState =
 
 type OrderState = "PENDING" | "NAVIGATING_TO_PICKUP" | "ARRIVED_AT_PICKUP" | "PICKED_UP" | "NAVIGATING_TO_DROP" | "DELIVERED";
 
-export default function RoadRunnerApp() {
+export default function PicktoApp() {
   const [appState, setAppState] = useState<AppState>("LOGIN");
   const [isOnline, setIsOnline] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -128,7 +128,7 @@ export default function RoadRunnerApp() {
         <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Bike className="w-12 h-12 text-primary" />
         </div>
-        <h1 className="text-3xl font-extrabold text-primary">RoadRunner</h1>
+        <h1 className="text-3xl font-extrabold text-primary">Pickto</h1>
         <p className="text-muted-foreground">Deliver More. Earn More.</p>
       </div>
       
