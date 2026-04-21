@@ -156,6 +156,8 @@ export default function PicktoApp() {
       setOnboardingData(prev => ({ ...prev, [key]: fileName }));
       toast({ title: "File Uploaded", description: `${fileName} has been selected.` });
     }
+    // Reset input value to allow re-uploading the same file
+    if (e.target) e.target.value = '';
   };
 
   const renderLogin = () => (
@@ -199,6 +201,7 @@ export default function PicktoApp() {
         )}
 
         <Button 
+          type="button"
           className="action-button bg-primary hover:bg-primary/90 mt-6"
           disabled={phoneValue.length !== 10 || (phoneValue.length === 10 && otpValue.length !== 4)}
           onClick={() => setAppState("ONBOARDING")}
@@ -282,7 +285,13 @@ export default function PicktoApp() {
                       <CheckCircle2 className="w-4 h-4" />
                       {onboardingData[currentStepConfig.fileField as keyof typeof onboardingData]}
                     </p>
-                    <Button variant="ghost" size="sm" className="mt-2 text-primary" onClick={() => fileInputRef.current?.click()}>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm" 
+                      className="mt-2 text-primary" 
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       Change File
                     </Button>
                   </div>
@@ -293,24 +302,24 @@ export default function PicktoApp() {
                   </p>
                 )}
                 {!onboardingData[currentStepConfig.fileField as keyof typeof onboardingData] && (
-                  <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4 gap-2" 
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="w-4 h-4" />
                     Choose File
                   </Button>
                 )}
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={handleFileUpload}
-                  accept="image/*,application/pdf"
-                />
               </div>
               <div className="space-y-2">
                 <Label>{currentStepConfig.title} Number</Label>
                 <Input 
+                  key={currentStepConfig.field}
                   placeholder={`Enter ${currentStepConfig.title} Number`} 
-                  value={onboardingData[currentStepConfig.field as keyof typeof onboardingData] as string}
+                  value={(onboardingData[currentStepConfig.field as keyof typeof onboardingData] as string) || ""}
                   onChange={(e) => setOnboardingData(prev => ({ ...prev, [currentStepConfig.field as string]: e.target.value }))}
                 />
               </div>
@@ -320,6 +329,7 @@ export default function PicktoApp() {
 
         <div className="mt-auto space-y-4 pt-4">
           <Button 
+            type="button"
             className="action-button bg-primary"
             onClick={() => {
               if (onboardingStep < 5) setOnboardingStep(prev => prev + 1);
@@ -329,7 +339,7 @@ export default function PicktoApp() {
             {onboardingStep === 5 ? "Submit Documents" : "Next Step"}
           </Button>
           {onboardingStep > 1 && (
-            <Button variant="ghost" className="w-full" onClick={() => setOnboardingStep(prev => prev - 1)}>
+            <Button type="button" variant="ghost" className="w-full" onClick={() => setOnboardingStep(prev => prev - 1)}>
               Back
             </Button>
           )}
@@ -350,6 +360,7 @@ export default function PicktoApp() {
         </p>
       </div>
       <Button 
+        type="button"
         variant="outline" 
         className="w-full max-w-xs" 
         onClick={() => {
@@ -369,7 +380,7 @@ export default function PicktoApp() {
           <p className="text-muted-foreground text-sm">Sun, 24 Oct</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="bg-white rounded-full shadow-sm">
+          <Button type="button" variant="ghost" size="icon" className="bg-white rounded-full shadow-sm">
             <Bell className="w-5 h-5" />
           </Button>
           <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
@@ -518,6 +529,7 @@ export default function PicktoApp() {
                   Delivery Instructions
                 </h4>
                 <Button 
+                  type="button"
                   variant="ghost" 
                   size="sm" 
                   className="h-7 text-[10px] text-accent font-bold px-2 border border-accent/20 rounded-full"
@@ -559,6 +571,7 @@ export default function PicktoApp() {
 
             <div className="flex gap-3">
               <Button 
+                type="button"
                 variant="outline" 
                 size="icon" 
                 className="w-14 h-14 rounded-xl bg-muted/20"
@@ -567,6 +580,7 @@ export default function PicktoApp() {
                 <Phone className="w-6 h-6 text-primary" />
               </Button>
               <Button 
+                type="button"
                 className="flex-1 action-button bg-primary h-14"
                 onClick={() => {
                   if (currentStep?.next) {
@@ -595,7 +609,7 @@ export default function PicktoApp() {
   const renderEarnings = () => (
     <div className="screen-content h-full bg-[#ECF1F6] space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => setAppState("DASHBOARD")}>
+        <Button type="button" variant="ghost" size="icon" onClick={() => setAppState("DASHBOARD")}>
           <ArrowRight className="w-6 h-6 rotate-180" />
         </Button>
         <h2 className="text-2xl font-bold">Earnings</h2>
@@ -606,7 +620,7 @@ export default function PicktoApp() {
         <CardContent className="p-8 space-y-4">
           <p className="text-white/70 text-sm font-medium">Available for Withdrawal</p>
           <h3 className="text-4xl font-black">₹ 2,450.00</h3>
-          <Button className="w-full bg-white text-primary hover:bg-white/90 font-bold py-6">Withdraw Now</Button>
+          <Button type="button" className="w-full bg-white text-primary hover:bg-white/90 font-bold py-6">Withdraw Now</Button>
         </CardContent>
       </Card>
 
@@ -647,7 +661,7 @@ export default function PicktoApp() {
     <div className="screen-content h-full bg-[#ECF1F6] space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">My Profile</h2>
-        <Button variant="ghost" size="sm" className="text-destructive font-bold gap-2" onClick={() => setAppState("LOGIN")}>
+        <Button type="button" variant="ghost" size="sm" className="text-destructive font-bold gap-2" onClick={() => setAppState("LOGIN")}>
           <LogOut className="w-4 h-4" />
           Logout
         </Button>
@@ -691,7 +705,7 @@ export default function PicktoApp() {
         </div>
       </div>
       
-      <Button variant="outline" className="w-full text-destructive border-destructive/20 bg-destructive/5 hover:bg-destructive/10">Delete Account</Button>
+      <Button type="button" variant="outline" className="w-full text-destructive border-destructive/20 bg-destructive/5 hover:bg-destructive/10">Delete Account</Button>
     </div>
   );
 
@@ -736,13 +750,22 @@ export default function PicktoApp() {
             placeholder="Type your issue here..."
           />
         </div>
-        <Button className="w-full action-button bg-primary">Submit Ticket</Button>
+        <Button type="button" className="w-full action-button bg-primary">Submit Ticket</Button>
       </div>
     </div>
   );
 
   return (
     <div className="mobile-container">
+      {/* Hidden file input used across onboarding steps */}
+      <input 
+        type="file" 
+        style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+        ref={fileInputRef} 
+        onChange={handleFileUpload}
+        accept="image/*,application/pdf"
+      />
+
       {appState === "LOGIN" && renderLogin()}
       {appState === "ONBOARDING" && renderOnboarding()}
       {appState === "PENDING_APPROVAL" && renderPendingApproval()}
@@ -812,6 +835,7 @@ export default function PicktoApp() {
 
             <div className="grid grid-cols-2 gap-4">
               <Button 
+                type="button"
                 variant="outline" 
                 className="h-14 rounded-2xl text-destructive border-destructive/20 hover:bg-destructive/5 font-bold"
                 onClick={rejectOrder}
@@ -819,6 +843,7 @@ export default function PicktoApp() {
                 Reject
               </Button>
               <Button 
+                type="button"
                 className="h-14 rounded-2xl bg-[#4CAF50] hover:bg-[#45a049] text-white font-black text-lg"
                 onClick={acceptOrder}
               >
