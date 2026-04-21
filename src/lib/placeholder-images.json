@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "delivery-rider",
+      "description": "Delivery rider on a scooter",
+      "imageUrl": "https://picsum.photos/seed/roadrunner1/800/600",
+      "imageHint": "delivery rider"
+    },
+    {
+      "id": "aadhaar-card",
+      "description": "Identity document placeholder",
+      "imageUrl": "https://picsum.photos/seed/aadhaar/400/250",
+      "imageHint": "identity card"
+    },
+    {
+      "id": "driving-license",
+      "description": "Driving license placeholder",
+      "imageUrl": "https://picsum.photos/seed/license/400/250",
+      "imageHint": "driving license"
+    }
+  ]
 }
