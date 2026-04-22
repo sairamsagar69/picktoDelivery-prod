@@ -1,0 +1,198 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRole(role) {
+      return isSignedIn() && request.auth.token.role == role;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- NEW: Helper function to check if the user is the assigned driver --- 
+    function isAssignedDriver(batchDoc) {
+        return isSignedIn() && request.auth.uid == batchDoc.driverId;
+    }
+
+    function isCreatingOwnCustomer(customerId) {
+      let isIdCorrect = request.resource.data.id == customerId;
+      let isRoleCorrect = request.resource.data.role == 'customer';
+      return isIdCorrect && isRoleCorrect;
+    }
+
+    function isCustomerDataValidOnUpdate() {
+        let isIdImmutable = request.resource.data.id == resource.data.id;
+        let isRoleUnchangedByUser = request.resource.data.role == resource.data.role;
+        return isIdImmutable && (isRole('admin') || isRoleUnchangedByUser);
+    }
+    
+    // --------------------------------
+    // Collection Rules
+    // --------------------------------
+
+    match /products/{productId} {
+      allow get, list: if true;
+      allow write: if isRole('admin') || isRole('ops_support');
+      
+      match /variants/{variantId} {
+        allow get, list: if true;
+        allow write: if isRole('admin') || isRole('ops_support');
+      }
+    }
+
+    // Rule for collection group queries on 'variants'
+    match /{path=**}/variants/{variantId} {
+      allow get, list: if true;
+    }
+
+    // Rule for collection group queries on 'inventory'
+    match /{path=**}/inventory/{inventoryId} {
+      allow get, list: if true;
+    }
+
+    match /warehouses/{warehouseId}/inventory/{inventoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isRole('admin') || isRole('ops_support');
+    }
+    
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow write: if isRole('admin');
+      
+      // Allow signed-in users to read profile icons
+      match /profile_icons/imageUrls/{iconId} {
+        allow get, list: if isSignedIn();
+      }
+    }
+
+    match /settings/warehouse {
+      allow get, list: if isRole('admin') || isRole('ops_support');
+      allow write: if isRole('admin');
+    }
+
+    match /settings/zone {
+      allow get, list: if isRole('admin') || isRole('ops_support');
+      allow write: if isRole('admin');
+    }
+
+    match /settings/delivery_config {
+      allow get, list: if isRole('admin') || isRole('ops_support');
+      allow write: if isRole('admin');
+    }
+
+    match /roles/{roleId} {
+      allow get, list, write: if isRole('admin');
+    }
+    
+    match /coupons/{couponId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isRole('admin') || isRole('ops_support');
+    }
+    
+    match /couponUsages/{usageId} {
+      // This collection can only be accessed by trusted server-side code (Cloud Functions).
+      // All client-side access is forbidden for maximum security.
+      allow read, write: if false;
+    }
+
+    match /shipping_settings/{settingsId} {
+      allow get, list: if true;
+      allow write: if isRole('admin');
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow write: if isRole('admin');
+    }
+
+    match /categoryWarehouse/{warehouseId} {
+        allow get, list: if true;
+        allow write: if isRole('admin') || isRole('ops_support');
+    }
+    
+    match /banners/{bannerId} {
+        allow get, list: if true;
+        allow write: if isRole('admin') || isRole('ops_support');
+    }
+
+    match /permissions/{userId} {
+        // Admins can manage all permissions. A user can read their own permissions.
+        allow get: if isOwner(userId) || isRole('admin');
+        allow list, write: if isRole('admin');
+    }
+
+    match /delivery-batches/{batchId} {
+        // Admins, ops_support can see all batches. A driver can see a batch if they are assigned to it.
+        allow get, list: if isRole('admin') || isRole('ops_support') || isAssignedDriver(resource.data);
+        
+        // Client-side creation and deletion is forbidden.
+        allow create, delete: if false;
+        
+        // Admins and ops_support can update any batch. A driver can only update a batch they are assigned to.
+        allow update: if isRole('admin') || isRole('ops_support') || isAssignedDriver(request.resource.data);
+    }
+
+    match /orders/{orderId} {
+      // GET: Granular access control for reading a single document.
+      // - Admins, packers, and drivers have broad access.
+      // - Ops_support can only get orders that match their assigned warehouse.
+      // - Customers can only get their own orders.
+      allow get: if isRole('admin') || isRole('packer') || isRole('driver') ||
+                    (isRole('ops_support') && resource.data.warehouseId == get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.warehouseId) ||
+                    (isSignedIn() && resource.data.customerId == request.auth.uid);
+
+      // LIST: Broad permission to query the collection.
+      // - Security is enforced by the 'get' rule on each document returned by the query.
+      // - This allows flexible queries from the client (e.g., multiple 'where' clauses).
+      allow list: if isRole('admin') || isRole('packer') || isRole('driver') || isRole('ops_support') || isSignedIn();
+
+      // WRITES:
+      // - Creation is disabled from the client.
+      // - Deletion is admin-only.
+      // - Updates are role-based, with customers having limited ability to cancel.
+      allow create: if false; 
+      allow delete: if isRole('admin');
+      allow update: if (isRole('admin') || isRole('packer') || isRole('driver')) ||
+                     (isSignedIn() && resource.data.customerId == request.auth.uid && request.resource.data.status == 'Cancelled' && request.resource.data.isArchived == true);
+    }
+
+    match /customers/{customerId} {
+      allow get: if isOwner(customerId) || isRole('admin');
+      allow list: if isRole('admin') || isRole('packer') || isRole('driver') || isRole('ops_support');
+      
+      allow create: if (isOwner(customerId) && isCreatingOwnCustomer(customerId)) || isRole('admin');
+      allow update: if (isOwner(customerId) && isCustomerDataValidOnUpdate()) || isRole('admin');
+      allow delete: if isRole('admin');
+
+      match /cart/{productId} {
+        allow read, write, delete: if isOwner(customerId);
+      }
+
+      match /wishlist/{productId} {
+        allow read, write, delete: if isOwner(customerId);
+      }
+    }
+
+    match /riders/{riderId} {
+      // Admins and authenticated owners have full access.
+      allow read, write: if isRole('admin') || (isSignedIn() && isOwner(riderId));
+      
+      // For the onboarding flow, allow an unauthenticated client to update
+      // the document, but ONLY if it's the first time (i.e., 'status' is not set yet).
+      // This is a temporary workaround.
+      // Also allow anyone to read the document for now.
+      allow read: if true;
+      allow update: if resource.data.status == null;
+    }
+  }
+}

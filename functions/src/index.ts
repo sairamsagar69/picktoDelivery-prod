@@ -11,12 +11,28 @@ const db = admin.firestore();
 const storage = admin.storage();
 
 export const uploadDocumentsDriver = onCall(async (request) => {
-  const { riderId, files } = request.data;
+  // --- DIAGNOSTIC LOGS START ---
+  console.log("Executing v3 of uploadDocumentsDriver: Now with diagnostic logs.");
+  console.log("Received data:", JSON.stringify(request.data, null, 2));
+  // --- DIAGNOSTIC LOGS END ---
 
-  if (!riderId || !files) {
+  const { 
+    riderId, 
+    files, 
+    fullName, 
+    city, 
+    vehicleType, 
+    licenseNo, 
+    rcNo, 
+    insuranceNo, 
+    aadhaarNo 
+  } = request.data;
+
+  if (!riderId || !files || !fullName || !city || !vehicleType) {
+    console.error("Validation failed. Missing fields.", { riderId, hasFiles: !!files, fullName, city, vehicleType });
     throw new HttpsError(
       "invalid-argument",
-      "Missing riderId or files"
+      "Missing required fields for driver onboarding."
     );
   }
 
@@ -43,9 +59,24 @@ export const uploadDocumentsDriver = onCall(async (request) => {
     return acc;
   }, {});
 
-  await docRef.set({
+  const riderData = {
+    fullName,
+    city,
+    vehicleType,
+    licenseNo,
+    rcNo,
+    insuranceNo,
+    aadhaarNo,
     documents: documentUrls,
-  }, { merge: true });
+    status: "pending_approval",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  
+  console.log("Preparing to write to Firestore with this data:", JSON.stringify(riderData, null, 2));
 
-  return { success: true, fileUrls: uploadedFiles };
+  await docRef.set(riderData, { merge: true });
+
+  console.log("Firestore write successful!");
+
+  return { success: true, message: "Driver profile created successfully." };
 });
