@@ -1,7 +1,29 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+build:
+  run: npm run build
+
+run:
+  run: npm run start
+
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyBC-eOL6xCOON8h0NtUUJlOgZiuc0rKN3s
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: fruitdrop-production-4796c.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: fruitdrop-production-4796c
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: fruitdrop-production-4796c.appspot.com
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "935679136712"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:935679136712:web:ab56c1b412edbb58a066fd
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: G-X66YH6DQPC
